@@ -1,43 +1,8 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowLeft, Building2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import { SignUp } from "@clerk/clerk-react";
+import { ArrowLeft } from "lucide-react";
 
 const Signup = () => {
-  const [step, setStep] = useState(1);
-  const [companyName, setCompanyName] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (step === 1) {
-      setStep(2);
-      return;
-    }
-
-    setIsLoading(true);
-
-    // Simulate signup - will be replaced with actual auth
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate("/admin");
-      toast({
-        title: "Account created!",
-        description: "Welcome to PayrollPro. Let's set up your company.",
-      });
-    }, 1000);
-  };
-
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Branding */}
@@ -99,134 +64,35 @@ const Signup = () => {
         </div>
       </div>
 
-      {/* Right Panel - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
+      {/* Right Panel - Clerk SignUp */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 sm:p-8 lg:p-12 bg-background">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <Link to="/" className="lg:hidden flex items-center gap-2 mb-8">
-            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
-            <span className="text-muted-foreground">Back to home</span>
+          <Link to="/" className="lg:hidden inline-flex items-center gap-2 mb-8 text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Back to home</span>
           </Link>
 
-          {/* Progress Indicator */}
-          <div className="flex items-center gap-2 mb-8">
-            <div className={`h-2 flex-1 rounded-full ${step >= 1 ? 'bg-accent' : 'bg-muted'}`} />
-            <div className={`h-2 flex-1 rounded-full ${step >= 2 ? 'bg-accent' : 'bg-muted'}`} />
-          </div>
+          {/* Clerk SignUp Component */}
+          <SignUp
+            appearance={{
+              elements: {
+                rootBox: "w-full",
+                card: "shadow-none bg-transparent",
+              },
+            }}
+            routing="path"
+            path="/signup"
+            signInUrl="/login"
+            afterSignUpUrl="/onboarding"
+          />
 
-          <div className="mb-8">
-            <h2 className="font-display text-3xl font-bold text-foreground mb-2">
-              {step === 1 ? "Create your account" : "Set up your company"}
-            </h2>
-            <p className="text-muted-foreground">
-              {step === 1 
-                ? "Enter your details to get started" 
-                : "Tell us about your company"}
+          {/* Info hint */}
+          <div className="mt-8 p-4 rounded-xl bg-muted/50 border border-border">
+            <p className="text-sm text-muted-foreground text-center">
+              <strong>Note:</strong> After creating your account, you'll choose your role (admin or employee)
             </p>
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {step === 1 ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full name</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="John Smith"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    className="h-12"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Work email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="h-12"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Create a strong password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={8}
-                      className="h-12 pr-12"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">Company name</Label>
-                  <div className="relative">
-                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="companyName"
-                      type="text"
-                      placeholder="Acme Inc."
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      required
-                      className="h-12 pl-12"
-                    />
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                  <p className="text-sm text-muted-foreground">
-                    You'll be the admin of this company. You can invite more admins and employees after setup.
-                  </p>
-                </div>
-              </>
-            )}
-
-            <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating account..." : step === 1 ? "Continue" : "Create company"}
-            </Button>
-
-            {step === 2 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="lg"
-                className="w-full"
-                onClick={() => setStep(1)}
-              >
-                Back
-              </Button>
-            )}
-          </form>
-
-          <p className="mt-8 text-center text-muted-foreground">
-            Already have an account?{" "}
-            <Link to="/login" className="text-accent hover:underline font-medium">
-              Sign in
-            </Link>
-          </p>
 
           <p className="mt-4 text-center text-xs text-muted-foreground">
             By signing up, you agree to our{" "}

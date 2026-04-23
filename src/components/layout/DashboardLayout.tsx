@@ -1,25 +1,30 @@
 import { ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
   Clock,
-  DollarSign,
-  Calendar,
-  FileText,
   Settings,
+  FileText,
   LogOut,
   ChevronLeft,
   Menu,
   Bell,
   Search,
-  MapPin,
-  BarChart3,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useUser, useClerk } from "@clerk/clerk-react";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -29,30 +34,95 @@ interface DashboardLayoutProps {
 const adminNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
   { icon: Users, label: "Employees", path: "/admin/employees" },
-  { icon: Clock, label: "Time Tracking", path: "/admin/time" },
-  { icon: DollarSign, label: "Payroll", path: "/admin/payroll" },
-  { icon: Calendar, label: "PTO Requests", path: "/admin/pto" },
-  { icon: MapPin, label: "Locations", path: "/admin/locations" },
+  { icon: Clock, label: "Time Tracking", path: "/admin/time-tracking" },
   { icon: FileText, label: "Documents", path: "/admin/documents" },
-  { icon: BarChart3, label: "Reports", path: "/admin/reports" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },
 ];
 
 const employeeNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/employee" },
-  { icon: Clock, label: "My Time", path: "/employee/time" },
-  { icon: DollarSign, label: "Pay Stubs", path: "/employee/pay" },
-  { icon: Calendar, label: "Time Off", path: "/employee/pto" },
-  { icon: FileText, label: "Documents", path: "/employee/documents" },
-  { icon: Settings, label: "Settings", path: "/employee/settings" },
+];
+
+// Sample notifications data
+const sampleNotifications = [
+  {
+    id: 1,
+    type: "warning",
+    title: "GPS Verification Failed",
+    description: "Emily Davis - Outside geofence",
+    time: "5 min ago",
+    link: "/admin/time-tracking",
+    read: false,
+  },
+  {
+    id: 2,
+    type: "info",
+    title: "5 PTO Requests Pending",
+    description: "Review required",
+    time: "1 hour ago",
+    link: "/admin/pto",
+    read: false,
+  },
+  {
+    id: 3,
+    type: "error",
+    title: "Missing Time Entry",
+    description: "2 employees need review",
+    time: "2 hours ago",
+    link: "/admin/time-tracking",
+    read: false,
+  },
+  {
+    id: 4,
+    type: "success",
+    title: "Payroll Completed",
+    description: "December payroll processed",
+    time: "Yesterday",
+    link: "/admin/payroll",
+    read: true,
+  },
 ];
 
 const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const location = useLocation();
-  
+  const navigate = useNavigate();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+
   const navItems = role === "admin" ? adminNavItems : employeeNavItems;
+  const unreadCount = sampleNotifications.filter(n => !n.read).length;
+
+  const handleSignOut = () => {
+    signOut();
+  };
+
+  const handleNotificationClick = (link: string) => {
+    setNotificationsOpen(false);
+    navigate(link);
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "warning":
+        return <AlertTriangle className="w-4 h-4 text-warning" />;
+      case "error":
+        return <XCircle className="w-4 h-4 text-destructive" />;
+      case "success":
+        return <CheckCircle2 className="w-4 h-4 text-success" />;
+      default:
+        return <Clock className="w-4 h-4 text-accent" />;
+    }
+  };
+
+  // Get user initials
+  const userInitials = user
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() ||
+      user.emailAddresses[0]?.emailAddress?.[0]?.toUpperCase() ||
+      "U"
+    : "U";
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -78,6 +148,7 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
             size="iconSm"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="text-sidebar-foreground hover:bg-sidebar-accent"
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronLeft className={cn("w-4 h-4 transition-transform", sidebarCollapsed && "rotate-180")} />
           </Button>
@@ -109,17 +180,17 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
 
         {/* User Section */}
         <div className="p-4 border-t border-sidebar-border">
-          <Link
-            to="/"
+          <button
+            onClick={handleSignOut}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all duration-200"
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all duration-200"
             )}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
             {!sidebarCollapsed && (
               <span className="font-medium text-sm">Sign out</span>
             )}
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -180,12 +251,13 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
               size="icon"
               className="lg:hidden"
               onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open navigation menu"
             >
               <Menu className="w-5 h-5" />
             </Button>
 
-            <div className="hidden sm:flex items-center gap-2 bg-muted rounded-lg px-3 py-2">
-              <Search className="w-4 h-4 text-muted-foreground" />
+            <div className="hidden sm:flex items-center gap-2 bg-muted rounded-xl px-3.5 py-2">
+              <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <Input
                 type="search"
                 placeholder="Search..."
@@ -195,17 +267,90 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full" />
-            </Button>
+            <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative" aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}>
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive rounded-full flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-destructive-foreground">{unreadCount}</span>
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <div className="p-4 border-b border-border">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-foreground">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <span className="text-xs text-muted-foreground">{unreadCount} unread</span>
+                    )}
+                  </div>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {sampleNotifications.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground text-sm">
+                      No notifications
+                    </div>
+                  ) : (
+                    sampleNotifications.map((notification) => (
+                      <button
+                        key={notification.id}
+                        onClick={() => handleNotificationClick(notification.link)}
+                        className={cn(
+                          "w-full p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors text-left border-b border-border last:border-0",
+                          !notification.read && "bg-accent/5"
+                        )}
+                      >
+                        <div className="flex-shrink-0 mt-0.5">
+                          {getNotificationIcon(notification.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {notification.title}
+                            </p>
+                            {!notification.read && (
+                              <span className="w-2 h-2 bg-accent rounded-full flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {notification.description}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {notification.time}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+                <div className="p-2 border-t border-border">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs"
+                    onClick={() => {
+                      setNotificationsOpen(false);
+                      navigate(role === "admin" ? "/admin/settings" : "/employee/settings");
+                    }}
+                  >
+                    View all notifications
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center">
-                <span className="text-accent-foreground font-semibold text-sm">JD</span>
+                <span className="text-accent-foreground font-semibold text-sm">
+                  {userInitials}
+                </span>
               </div>
               <div className="hidden sm:block">
-                <div className="text-sm font-medium text-foreground">John Doe</div>
+                <div className="text-sm font-medium text-foreground">
+                  {user?.fullName || user?.emailAddresses[0]?.emailAddress || "User"}
+                </div>
                 <div className="text-xs text-muted-foreground capitalize">{role}</div>
               </div>
             </div>

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(npm install:*)",
+      "Bash(test:*)",
+      "Bash(npx convex:*)",
+      "Bash(npm run build:*)",
+      "Bash(xargs:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(head:*)"
+    ]
+  }
+}

@@ -12,6 +12,26 @@ dist
 dist-ssr
 *.local
 
+# ===========================================
+# SECURITY: Environment files with secrets
+# ===========================================
+# NEVER commit files containing API keys or secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+
+# Clerk secret keys (if accidentally named differently)
+*clerk*secret*
+
+# Convex deployment credentials
+.convex-credentials
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +42,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary files
+tmpclaude-*

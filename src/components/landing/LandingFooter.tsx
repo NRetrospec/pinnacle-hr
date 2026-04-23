@@ -1,126 +1,118 @@
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Mail, MapPin, Phone } from "lucide-react";
 
 const LandingFooter = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-primary text-primary-foreground py-16">
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-          {/* Brand */}
-          <div className="md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
-                <span className="text-accent-foreground font-bold text-xl">P</span>
-              </div>
-              <span className="font-display font-bold text-xl">PayrollPro</span>
-            </Link>
-            <p className="text-primary-foreground/70 text-sm leading-relaxed">
-              Modern HR and payroll management for businesses of all sizes. Trusted by 10,000+ companies worldwide.
+    <section id="about" className="flex flex-col bg-primary text-primary-foreground">
+      <div className="flex-1">
+        <div className="container mx-auto px-4 sm:px-6 py-20 sm:py-28">
+          {/* About Header */}
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <span className="inline-block text-white/50 font-semibold text-sm uppercase tracking-wider mb-4">About Us</span>
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+              Building the Future of HR
+            </h2>
+            <p className="text-white/70 text-lg max-w-2xl mx-auto">
+              PayrollPro was founded with a simple mission: make HR and payroll management effortless for businesses of all sizes.
             </p>
           </div>
 
-          {/* Product */}
-          <div>
-            <h4 className="font-display font-semibold mb-4">Product</h4>
-            <ul className="space-y-3">
-              <li>
-                <Link to="#features" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link to="#pricing" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  Pricing
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  Integrations
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  API
-                </Link>
-              </li>
-            </ul>
+          {/* Content Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 max-w-5xl mx-auto mb-16">
+            {/* Mission */}
+            <div className="text-center p-6 sm:p-8 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors">
+              <h3 className="font-display text-lg font-bold mb-3">Our Mission</h3>
+              <p className="text-white/60 text-sm leading-relaxed">
+                To empower businesses with intuitive, secure, and comprehensive HR tools that save time and reduce complexity.
+              </p>
+            </div>
+
+            {/* Vision */}
+            <div className="text-center p-6 sm:p-8 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors">
+              <h3 className="font-display text-lg font-bold mb-3">Our Vision</h3>
+              <p className="text-white/60 text-sm leading-relaxed">
+                A world where every business, regardless of size, has access to enterprise-grade HR and payroll solutions.
+              </p>
+            </div>
+
+            {/* Values */}
+            <div className="text-center p-6 sm:p-8 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors">
+              <h3 className="font-display text-lg font-bold mb-3">Our Values</h3>
+              <p className="text-white/60 text-sm leading-relaxed">
+                Security, simplicity, and customer success drive everything we do. Your trust is our top priority.
+              </p>
+            </div>
           </div>
 
-          {/* Company */}
-          <div>
-            <h4 className="font-display font-semibold mb-4">Company</h4>
-            <ul className="space-y-3">
-              <li>
-                <Link to="#about" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Contact & CTA */}
+          <div className="text-center max-w-2xl mx-auto">
+            <h3 className="font-display text-2xl font-bold mb-4">Ready to Get Started?</h3>
+            <p className="text-white/70 mb-6">
+              Join over 10,000 companies already using PayrollPro to streamline their HR operations.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+              <Link to="/signup">
+                <Button size="lg" className="group bg-white text-primary hover:bg-white/90">
+                  Start Free Trial
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10">
+                <Mail className="w-4 h-4 mr-2" />
+                Contact Sales
+              </Button>
+            </div>
 
-          {/* Legal */}
-          <div>
-            <h4 className="font-display font-semibold mb-4">Legal</h4>
-            <ul className="space-y-3">
-              <li>
-                <Link to="#" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  Security
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-primary-foreground/70 hover:text-primary-foreground text-sm transition-colors">
-                  GDPR
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-primary-foreground/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-primary-foreground/60 text-sm">
-            © {currentYear} PayrollPro. All rights reserved.
-          </p>
-          <div className="flex items-center gap-6">
-            <Link to="#" className="text-primary-foreground/60 hover:text-primary-foreground text-sm transition-colors">
-              Twitter
-            </Link>
-            <Link to="#" className="text-primary-foreground/60 hover:text-primary-foreground text-sm transition-colors">
-              LinkedIn
-            </Link>
-            <Link to="#" className="text-primary-foreground/60 hover:text-primary-foreground text-sm transition-colors">
-              GitHub
-            </Link>
+            {/* Contact Info */}
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-white/60">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                <span>hello@payrollpro.com</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                <span>1-800-PAYROLL</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                <span>San Francisco, CA</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </footer>
+
+      {/* Bottom Bar */}
+      <div className="border-t border-white/10 py-6">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                <span className="text-white font-bold">P</span>
+              </div>
+              <span className="font-display font-bold">PayrollPro</span>
+            </div>
+            <p className="text-white/60 text-sm">
+              © {currentYear} PayrollPro. All rights reserved.
+            </p>
+            <div className="flex items-center gap-6">
+              <button className="text-white/60 hover:text-white text-sm transition-colors">
+                Privacy
+              </button>
+              <button className="text-white/60 hover:text-white text-sm transition-colors">
+                Terms
+              </button>
+              <button className="text-white/60 hover:text-white text-sm transition-colors">
+                Security
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 };
 

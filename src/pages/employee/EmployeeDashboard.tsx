@@ -1,27 +1,36 @@
 import { useState, useEffect } from "react";
-import { 
-  Clock, 
-  DollarSign, 
-  Calendar, 
+import {
+  Clock,
+  DollarSign,
+  Calendar,
   FileText,
   MapPin,
   CheckCircle2,
   Play,
   Square,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { format } from "date-fns";
 
 const EmployeeDashboard = () => {
-  const [isClockedIn, setIsClockedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [clockInTime, setClockInTime] = useState<Date | null>(null);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const { toast } = useToast();
 
+  // Convex queries and mutations
+  const clockStatus = useQuery(api.timeEntries.getCurrentStatus);
+  const recentEntries = useQuery(api.timeEntries.getMyEntries, { limit: 5 });
+  const clockInMutation = useMutation(api.timeEntries.clockIn);
+  const clockOutMutation = useMutation(api.timeEntries.clockOut);
+
+  // Update current time every second
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -31,50 +40,63 @@ const EmployeeDashboard = () => {
     setIsLoading(true);
 
     // Get GPS location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-
-          setTimeout(() => {
-            setIsLoading(false);
-            if (isClockedIn) {
-              setIsClockedIn(false);
-              setClockInTime(null);
-              toast({
-                title: "Clocked Out",
-                description: `You have clocked out at ${new Date().toLocaleTimeString()}`,
-              });
-            } else {
-              setIsClockedIn(true);
-              setClockInTime(new Date());
-              toast({
-                title: "Clocked In",
-                description: `You have clocked in at ${new Date().toLocaleTimeString()}`,
-              });
-            }
-          }, 1000);
-        },
-        (error) => {
-          setIsLoading(false);
-          toast({
-            title: "Location Required",
-            description: "Please enable location services to clock in/out.",
-            variant: "destructive",
-          });
-        }
-      );
-    } else {
+    if (!navigator.geolocation) {
       setIsLoading(false);
       toast({
         title: "Location Not Supported",
         description: "Your browser doesn't support geolocation.",
         variant: "destructive",
       });
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+
+          if (clockStatus?.isClockedIn) {
+            // Clock out
+            const result = await clockOutMutation({ latitude, longitude });
+            toast({
+              title: result.verified ? "Clocked Out" : "Clocked Out (Flagged)",
+              description: result.message,
+              variant: result.verified ? "default" : "destructive",
+            });
+          } else {
+            // Clock in
+            const result = await clockInMutation({ latitude, longitude });
+            toast({
+              title: result.verified ? "Clocked In" : "Clocked In (Flagged)",
+              description: result.message,
+              variant: result.verified ? "default" : "destructive",
+            });
+          }
+        } catch (error: any) {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to clock in/out",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      },
+      (error) => {
+        setIsLoading(false);
+        toast({
+          title: "Location Required",
+          description: "Please enable location services to clock in/out.",
+          variant: "destructive",
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
   };
 
   const formatTime = (date: Date) => {
@@ -86,12 +108,72 @@ const EmployeeDashboard = () => {
   };
 
   const getWorkedHours = () => {
-    if (!clockInTime) return "0:00";
-    const diff = currentTime.getTime() - clockInTime.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    if (!clockStatus?.isClockedIn || !clockStatus.activeEntry) return "0:00";
+    const elapsed = clockStatus.activeEntry.elapsedHours;
+    const hours = Math.floor(elapsed);
+    const minutes = Math.floor((elapsed % 1) * 60);
     return `${hours}:${minutes.toString().padStart(2, "0")}`;
   };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "approved":
+        return <Badge variant="default" className="bg-success">Approved</Badge>;
+      case "pending":
+        return <Badge variant="secondary">Pending</Badge>;
+      case "flagged":
+        return <Badge variant="destructive">Flagged</Badge>;
+      case "rejected":
+        return <Badge variant="destructive">Rejected</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  // Show loading state while Convex data is being fetched
+  if (clockStatus === undefined) {
+    return (
+      <DashboardLayout role="employee">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading your dashboard...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // If no employee profile, show setup message
+  if (clockStatus && !clockStatus.hasEmployeeProfile) {
+    return (
+      <DashboardLayout role="employee">
+        <div className="space-y-8">
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">My Dashboard</h1>
+            <p className="text-muted-foreground mt-1">Welcome to Pinnacle HR</p>
+          </div>
+
+          <div className="dashboard-card p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-6">
+                <AlertTriangle className="w-8 h-8 text-warning" />
+              </div>
+              <h2 className="font-display text-2xl font-bold text-foreground mb-4">
+                Employee Profile Setup Required
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Your employee profile hasn't been created yet. Please contact your administrator to set up your profile and link it to your account.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Once your profile is set up, you'll be able to clock in/out, request time off, and access all employee features.
+              </p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="employee">
@@ -124,15 +206,15 @@ const EmployeeDashboard = () => {
 
             <div className="flex flex-col items-center gap-4">
               <Button
-                variant={isClockedIn ? "destructive" : "success"}
+                variant={clockStatus?.isClockedIn ? "destructive" : "success"}
                 size="xl"
                 className="w-48 h-16 text-lg clock-btn"
                 onClick={handleClockAction}
-                disabled={isLoading}
+                disabled={isLoading || !clockStatus}
               >
                 {isLoading ? (
                   <Loader2 className="w-6 h-6 animate-spin" />
-                ) : isClockedIn ? (
+                ) : clockStatus?.isClockedIn ? (
                   <>
                     <Square className="w-6 h-6" />
                     Clock Out
@@ -145,17 +227,29 @@ const EmployeeDashboard = () => {
                 )}
               </Button>
 
-              {isClockedIn && (
-                <div className="flex items-center gap-2 text-primary-foreground/80">
-                  <CheckCircle2 className="w-4 h-4 text-success" />
-                  <span>Clocked in since {clockInTime?.toLocaleTimeString()}</span>
-                </div>
-              )}
-
-              {location && (
-                <div className="flex items-center gap-2 text-primary-foreground/60 text-sm">
-                  <MapPin className="w-4 h-4" />
-                  <span>Location verified</span>
+              {clockStatus?.isClockedIn && clockStatus.activeEntry && (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-2 text-primary-foreground/80">
+                    {clockStatus.activeEntry.clockInVerified ? (
+                      <CheckCircle2 className="w-4 h-4 text-success" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-warning" />
+                    )}
+                    <span>
+                      Clocked in since {format(clockStatus.activeEntry.clockInTime, "h:mm a")}
+                    </span>
+                  </div>
+                  {clockStatus.activeEntry.clockInVerified ? (
+                    <div className="flex items-center gap-2 text-primary-foreground/60 text-sm">
+                      <MapPin className="w-4 h-4" />
+                      <span>Location verified</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-warning text-sm">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>Outside geofence</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -171,10 +265,12 @@ const EmployeeDashboard = () => {
               </div>
             </div>
             <div className="text-2xl sm:text-3xl font-bold text-foreground font-display">
-              {isClockedIn ? getWorkedHours() : "0:00"}
+              {clockStatus?.isClockedIn ? getWorkedHours() : "0:00"}
             </div>
             <div className="text-sm text-muted-foreground mt-1">Hours Today</div>
-            <div className="text-xs text-muted-foreground mt-2">32.5 hrs this week</div>
+            <div className="text-xs text-muted-foreground mt-2">
+              {clockStatus?.isClockedIn ? "Currently clocked in" : "Not clocked in"}
+            </div>
           </div>
 
           <div className="dashboard-card stat-card">
@@ -221,7 +317,6 @@ const EmployeeDashboard = () => {
         <div className="dashboard-card">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display text-lg font-semibold text-foreground">Recent Time Entries</h2>
-            <Button variant="ghost" size="sm">View all</Button>
           </div>
 
           <div className="overflow-x-auto">
@@ -236,24 +331,33 @@ const EmployeeDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { date: "Dec 20, 2025", clockIn: "8:00 AM", clockOut: "5:00 PM", hours: "8.0", status: "approved" },
-                  { date: "Dec 19, 2025", clockIn: "7:55 AM", clockOut: "5:30 PM", hours: "8.5", status: "approved" },
-                  { date: "Dec 18, 2025", clockIn: "8:15 AM", clockOut: "6:00 PM", hours: "8.75", status: "approved" },
-                  { date: "Dec 17, 2025", clockIn: "8:00 AM", clockOut: "5:00 PM", hours: "8.0", status: "approved" },
-                ].map((entry, index) => (
-                  <tr key={index} className="border-b border-border/50 table-row-hover">
-                    <td className="py-4 text-foreground">{entry.date}</td>
-                    <td className="py-4 text-foreground">{entry.clockIn}</td>
-                    <td className="py-4 text-foreground">{entry.clockOut}</td>
-                    <td className="py-4 text-foreground">{entry.hours}</td>
-                    <td className="py-4">
-                      <span className="status-active px-2 py-1 rounded-full text-xs font-medium">
-                        {entry.status}
-                      </span>
+                {!recentEntries || recentEntries.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                      No time entries yet. Clock in to get started!
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  recentEntries.map((entry) => (
+                    <tr key={entry._id} className="border-b border-border/50 table-row-hover">
+                      <td className="py-4 text-foreground">
+                        {format(entry.clockInTime, "MMM d, yyyy")}
+                      </td>
+                      <td className="py-4 text-foreground">
+                        {format(entry.clockInTime, "h:mm a")}
+                      </td>
+                      <td className="py-4 text-foreground">
+                        {entry.clockOutTime ? format(entry.clockOutTime, "h:mm a") : "—"}
+                      </td>
+                      <td className="py-4 text-foreground">
+                        {entry.hoursWorked ? entry.hoursWorked.toFixed(2) : "In Progress"}
+                      </td>
+                      <td className="py-4">
+                        {getStatusBadge(entry.status)}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -261,23 +365,17 @@ const EmployeeDashboard = () => {
 
         {/* Quick Links */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-            <a href="/employee/pay">
-              <DollarSign className="w-6 h-6 text-accent" />
-              <span>View Pay Stubs</span>
-            </a>
+          <Button variant="outline" className="h-20 flex-col gap-2" disabled>
+            <DollarSign className="w-6 h-6 text-accent" />
+            <span>View Pay Stubs</span>
           </Button>
-          <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-            <a href="/employee/pto">
-              <Calendar className="w-6 h-6 text-accent" />
-              <span>Request Time Off</span>
-            </a>
+          <Button variant="outline" className="h-20 flex-col gap-2" disabled>
+            <Calendar className="w-6 h-6 text-accent" />
+            <span>Request Time Off</span>
           </Button>
-          <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-            <a href="/employee/documents">
-              <FileText className="w-6 h-6 text-accent" />
-              <span>View Documents</span>
-            </a>
+          <Button variant="outline" className="h-20 flex-col gap-2" disabled>
+            <FileText className="w-6 h-6 text-accent" />
+            <span>View Documents</span>
           </Button>
         </div>
       </div>

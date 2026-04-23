@@ -1,13 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* PayrollPro - Enterprise HR Platform Design System
    Modern, trustworthy, professional aesthetic
-   Inspired by ADP, Gusto, Rippling
 */
-
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
 @layer base {
   :root {
@@ -292,32 +291,27 @@
     background: linear-gradient(135deg, hsl(173, 80%, 40%) 0%, hsl(173, 70%, 50%) 100%);
   }
 
-  /* Fade in animation */
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out forwards;
-  }
-
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Slide up animation */
+  /* Slide up animation - used for hero entrance effects */
   .animate-slide-up {
     animation: slide-up 0.6s ease-out forwards;
+    opacity: 0;
   }
 
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(30px); }
+    from { opacity: 0; transform: translateY(24px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Stagger children animation delays */
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
+  /* Fade in animation */
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 
   /* Focus ring */
   .focus-ring {
